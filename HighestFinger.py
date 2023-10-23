@@ -38,9 +38,11 @@ while True:
     results = hands.process(imgRGB)
 
     if results.multi_hand_landmarks:
+        # Initialise
+        highest_finger = None
+        highest_y = float("inf")  # Initialize with negative infinity
+
         for landmarks in results.multi_hand_landmarks:
-            highest_finger = None
-            highest_y = float("-inf")  # Initialize with negative infinity
 
             # Iterate through each finger's landmarks
             for finger, landmark_indices in finger_landmarks.items():
@@ -64,10 +66,8 @@ while True:
                 end_x, end_y = int(end_point.x * img.shape[1]), int(end_point.y * img.shape[0])
                 cv2.line(img, (start_x, start_y), (end_x, end_y), (0, 255, 0), 2)
 
-            # Highlight the highest finger
-            if highest_finger:
-                cv2.rectangle(img, (10, 10), (250, 50), (0, 0, 0), -1)  # Black background
-                cv2.putText(img, f'Highest Finger: {highest_finger}', (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        
+        cv2.putText(img, f'Highest Finger: {highest_finger}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     # Display Video and when 'q' is entered, destroy the window
     cv2.imshow('Image', img)
