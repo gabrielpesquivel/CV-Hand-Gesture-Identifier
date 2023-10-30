@@ -1,5 +1,8 @@
 import cv2
 import mediapipe as mp
+import serial
+
+ser = serial.Serial('/dev/cu.usbmodem141301', 9600)
 
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(
@@ -25,38 +28,36 @@ finger_landmarks = {
 cap = cv2.VideoCapture(0)
 
 while True:
-    # Read video frame by frame
     success, img = cap.read()
-
-    # Flip the image (frame)
     img = cv2.flip(img, 1)
-
-    # Convert BGR image to RGB image
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    # Process the RGB image
     results = hands.process(imgRGB)
 
     if results.multi_hand_landmarks:
-        # Initialize finger count, excluding the thumb
-        finger_count = 0
-
         for landmarks in results.multi_hand_landmarks:
-            # Calculate the relative Y displacement for each finger, excluding the thumb
+            is_left_hand = landmarks.landmark[0].x < landmarks.landmark[5].x
+
+            finger_count = 0
             for finger, landmark_indices in finger_landmarks.items():
-                if finger != "thumb":
-                    base_landmark = landmarks.landmark[landmark_indices[0]]
-                    tip_landmark = landmarks.landmark[landmark_indices[-1]]
+                base_landmark = landmarks.landmark[landmark_indices[0]]
+                tip_landmark = landmarks.landmark[landmark_indices[-1]]
 
+                if finger == "thumb":
+                    if is_left_hand:
+                        relative_x_displacement = tip_landmark.x - base_landmark.x
+                        if relative_x_displacement > 0.02:
+                            finger_count += 1
+                    else:
+                        relative_x_displacement = base_landmark.x - tip_landmark.x
+                        if relative_x_displacement > 0.02:
+                            finger_count += 1
+                else:
                     relative_y_displacement = tip_landmark.y - base_landmark.y
-
-                    # Set a relative Y displacement threshold for fingers (adjust as needed)
                     threshold_y_displacement = -0.05
 
                     if relative_y_displacement < threshold_y_displacement:
                         finger_count += 1
 
-            # Draw lines between landmarks
             for connection in connections:
                 start_point = landmarks.landmark[connection[0]]
                 end_point = landmarks.landmark[connection[1]]
@@ -64,14 +65,16 @@ while True:
                 end_x, end_y = int(end_point.x * img.shape[1]), int(end_point.y * img.shape[0])
                 cv2.line(img, (start_x, start_y), (end_x, end_y), (0, 255, 0), 2)
 
-            # Display the finger count
-            cv2.putText(img, f'Fingers: {finger_count}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        
+            ser.write(bytes([finger_count]))
 
-    # Display Video and when 'q' is entered, destroy the window
+            # Decide where to put the text based on which hand is detected
+            text_position = (50, 50) if is_left_hand else (img.shape[1] - 200, 50)
+            cv2.putText(img, f'Fingers: {finger_count}', text_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
     cv2.imshow('Image', img)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release the video capture and close the OpenCV window
 cap.release()
 cv2.destroyAllWindows()
