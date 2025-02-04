@@ -1,9 +1,12 @@
+# Perform relevant imports
 import cv2
 import mediapipe as mp
 import serial
 
+# Update this to available COM port found in FindPorts.py
 ser = serial.Serial('COM7', 9600)
 
+# Initialize the MediaPipe Hands model
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(
     static_image_mode=False,
@@ -27,12 +30,15 @@ finger_landmarks = {
 # Start capturing video from the webcam
 cap = cv2.VideoCapture(0)
 
+# Loop through the video frames
 while True:
+    # Process one image at a time
     success, img = cap.read()
     img = cv2.flip(img, 1)
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     results = hands.process(imgRGB)
 
+    # If hands are detected, count the number of fingers
     if results.multi_hand_landmarks:
         for landmarks in results.multi_hand_landmarks:
             is_left_hand = landmarks.landmark[0].x < landmarks.landmark[5].x
@@ -42,6 +48,7 @@ while True:
                 base_landmark = landmarks.landmark[landmark_indices[0]]
                 tip_landmark = landmarks.landmark[landmark_indices[-1]]
 
+                # If thumb, calculate relative displacement differently than other fingers
                 if finger == "thumb":
                     if is_left_hand:
                         relative_x_displacement = tip_landmark.x - base_landmark.x
@@ -51,6 +58,8 @@ while True:
                         relative_x_displacement = base_landmark.x - tip_landmark.x
                         if relative_x_displacement > 0.02:
                             finger_count += 1
+
+                # For other fingers, calculate relative displacement based on y-axis
                 else:
                     relative_y_displacement = tip_landmark.y - base_landmark.y
                     threshold_y_displacement = -0.05
@@ -58,6 +67,7 @@ while True:
                     if relative_y_displacement < threshold_y_displacement:
                         finger_count += 1
 
+            # Draw the connections between the landmarks
             for connection in connections:
                 start_point = landmarks.landmark[connection[0]]
                 end_point = landmarks.landmark[connection[1]]
@@ -65,7 +75,7 @@ while True:
                 end_x, end_y = int(end_point.x * img.shape[1]), int(end_point.y * img.shape[0])
                 cv2.line(img, (start_x, start_y), (end_x, end_y), (0, 255, 0), 2)
 
-        
+            # Send the finger count to the Arduino
             ser.write(bytes([finger_count]))
 
             # Decide where to put the text based on which hand is detected

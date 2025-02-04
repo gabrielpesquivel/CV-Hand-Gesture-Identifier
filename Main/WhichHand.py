@@ -1,4 +1,4 @@
-# Importing Libraries
+# Perform relevant imports
 import cv2
 import mediapipe as mp
 
@@ -17,6 +17,7 @@ hands = mpHands.Hands(
 # Start capturing video from the webcam
 cap = cv2.VideoCapture(0)
 
+# Loop through the video frames
 while True:
     # Read video frame by frame
     success, img = cap.read()

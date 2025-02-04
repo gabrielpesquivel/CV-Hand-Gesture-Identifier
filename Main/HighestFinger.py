@@ -1,6 +1,8 @@
+# Perform relevant imports
 import cv2
 import mediapipe as mp
 
+# Initialize the MediaPipe Hands model
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(
     static_image_mode=False,
@@ -24,6 +26,7 @@ finger_landmarks = {
 # Start capturing video from the webcam
 cap = cv2.VideoCapture(0)
 
+# Run the loop infinitely
 while True:
     # Read video frame by frame
     success, img = cap.read()
@@ -67,6 +70,7 @@ while True:
                 cv2.line(img, (start_x, start_y), (end_x, end_y), (0, 255, 0), 2)
 
         
+        # Display the highest finger in text
         cv2.putText(img, f'Highest Finger: {highest_finger}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     # Display Video and when 'q' is entered, destroy the window
