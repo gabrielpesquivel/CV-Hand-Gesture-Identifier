@@ -2,7 +2,7 @@ import cv2
 import mediapipe as mp
 import serial
 
-ser = serial.Serial('/dev/cu.usbmodem141301', 9600)
+ser = serial.Serial('COM7', 9600)
 
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(
