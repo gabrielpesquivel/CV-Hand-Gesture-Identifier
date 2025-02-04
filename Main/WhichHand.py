@@ -1,4 +1,3 @@
-# Computer Vision project in python
 # Importing Libraries
 import cv2
 import mediapipe as mp
